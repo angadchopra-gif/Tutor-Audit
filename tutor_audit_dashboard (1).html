@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutor Audit Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card2: #151d2e;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-violet: #8b5cf6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #475569;
+    --border: #1e293b;
+    --border-light: #2d3f5e;
+    --glow-blue: 0 0 20px rgba(59,130,246,0.25);
+    --glow-red: 0 0 20px rgba(239,68,68,0.25);
+    --glow-green: 0 0 20px rgba(16,185,129,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.06) 0%, transparent 50%);
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+    border-bottom: 1px solid var(--border-light);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-box {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-violet));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 18px; color: white;
+    box-shadow: var(--glow-blue);
+  }
+  .header-title { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: var(--text-primary); }
+  .header-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; letter-spacing: 0.5px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: var(--accent-green); font-weight: 600; letter-spacing: 0.5px;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .date-badge { font-size: 11px; color: var(--text-secondary); }
+
+  /* LAYOUT */
+  .container { padding: 24px 32px; max-width: 1800px; margin: 0 auto; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab {
+    padding: 10px 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.2s; text-transform: uppercase; font-family: 'Rajdhani', sans-serif; font-size: 14px;
+  }
+  .tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+  .tab:hover:not(.active) { color: var(--text-primary); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* KPI CARDS */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    position: relative; overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--border-light); transform: translateY(-2px); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--accent-green), #34d399); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--accent-red), #f87171); }
+  .kpi-card.amber::before { background: linear-gradient(90deg, var(--accent-amber), #fcd34d); }
+  .kpi-card.violet::before { background: linear-gradient(90deg, var(--accent-violet), #a78bfa); }
+  .kpi-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .kpi-value { font-family: 'Rajdhani', sans-serif; font-size: 36px; font-weight: 700; line-height: 1; }
+  .kpi-value.blue { color: var(--accent-blue); }
+  .kpi-value.green { color: var(--accent-green); }
+  .kpi-value.red { color: var(--accent-red); }
+  .kpi-value.amber { color: var(--accent-amber); }
+  .kpi-value.violet { color: var(--accent-violet); }
+  .kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+  .kpi-icon { position: absolute; right: 18px; top: 18px; font-size: 22px; opacity: 0.15; }
+
+  /* GRID SYSTEM */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-65-35 { display: grid; grid-template-columns: 1.8fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-35-65 { display: grid; grid-template-columns: 1fr 1.8fr; gap: 16px; margin-bottom: 16px; }
+
+  /* PANEL */
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .panel:hover { border-color: var(--border-light); }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .panel-title { font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .panel-title-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .panel-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* CHART CONTAINERS */
+  .chart-wrap { position: relative; }
+
+  /* TUTOR RANKING TABLE */
+  .tutor-table { width: 100%; border-collapse: collapse; }
+  .tutor-table th {
+    font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.8px; font-weight: 600; text-align: left;
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+  }
+  .tutor-table td { padding: 12px 10px; border-bottom: 1px solid rgba(30,41,59,0.5); vertical-align: middle; }
+  .tutor-table tr:last-child td { border-bottom: none; }
+  .tutor-table tr:hover td { background: rgba(30,41,59,0.3); }
+  .tutor-rank { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-muted); }
+  .tutor-rank.gold { color: #f59e0b; }
+  .tutor-rank.silver { color: #94a3b8; }
+  .tutor-rank.bronze { color: #cd7c2e; }
+  .tutor-name-cell { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+  .tutor-name-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .score-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700;
+    width: 42px; height: 28px; border-radius: 6px;
+  }
+  .score-high { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+  .score-mid { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+  .score-low { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .score-na { background: rgba(71,85,105,0.15); color: var(--text-muted); font-size: 12px; }
+  .compliance-bar { display: flex; align-items: center; gap: 8px; }
+  .bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .bar-pct { font-size: 11px; color: var(--text-secondary); width: 32px; text-align: right; }
+  .alarm-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2);
+    margin: 2px; white-space: nowrap;
+  }
+
+  /* METRIC HEATMAP */
+  .heatmap-grid { display: grid; gap: 6px; }
+  .heatmap-row { display: flex; align-items: center; gap: 8px; }
+  .heatmap-label { width: 130px; font-size: 11px; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+  .heatmap-cells { display: flex; gap: 4px; flex: 1; }
+  .heatmap-cell {
+    flex: 1; height: 32px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; font-family: 'Rajdhani', sans-serif;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .heatmap-cell:hover { transform: scale(1.08); z-index: 1; }
+  .heatmap-header-row { display: flex; gap: 4px; margin-left: 138px; margin-bottom: 2px; }
+  .heatmap-header-cell { flex: 1; font-size: 10px; color: var(--text-muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ALARM PANEL */
+  .alarm-item {
+    display: flex; gap: 12px; padding: 12px 14px; border-radius: 8px;
+    margin-bottom: 8px; border: 1px solid;
+  }
+  .alarm-critical { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.2); }
+  .alarm-warning { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); }
+  .alarm-info { background: rgba(59,130,246,0.07); border-color: rgba(59,130,246,0.2); }
+  .alarm-icon { font-size: 18px; flex-shrink: 0; }
+  .alarm-content { flex: 1; }
+  .alarm-tutor { font-weight: 600; font-size: 12px; color: var(--text-primary); }
+  .alarm-desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+  .alarm-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+  /* TUTOR DETAIL */
+  .tutor-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  .tutor-select { background: var(--bg-card2); border: 1px solid var(--border-light); border-radius: 8px; padding: 8px 14px; color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 13px; width: 220px; cursor: pointer; outline: none; }
+  .metric-row-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .metric-mini { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .metric-mini-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .metric-mini-val { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; }
+  .metric-mini-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); }
+  .metric-mini-fill { height: 100%; border-radius: 2px; }
+
+  .issue-list { list-style: none; }
+  .issue-item {
+    padding: 10px 14px; border-radius: 7px; margin-bottom: 6px;
+    background: var(--bg-card2); border-left: 3px solid;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+  }
+  .issue-item.critical { border-color: var(--accent-red); }
+  .issue-item.warning { border-color: var(--accent-amber); }
+  .issue-item.ok { border-color: var(--accent-green); }
+
+  /* DONUT LEGENDS */
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .legend-label { font-size: 12px; color: var(--text-secondary); flex: 1; }
+  .legend-val { font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+  /* SEPARATOR */
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .full-width { grid-column: 1 / -1; }
+
+  .tooltip-box {
+    position: fixed; background: #1e293b; border: 1px solid var(--border-light);
+    border-radius: 8px; padding: 10px 14px; font-size: 11px; pointer-events: none;
+    z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
+    max-width: 250px; line-height: 1.6;
+  }
+
+  @media (max-width: 1200px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .tutor-card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="tooltip-box" id="tooltip"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">AI</div>
+    <div>
+      <div class="header-title">TUTOR AUDIT INTELLIGENCE</div>
+      <div class="header-sub">Quality Assurance · Performance Analytics · Compliance Monitoring</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE DATA</div>
+    <div class="date-badge">📅 Feb – May 2026 &nbsp;|&nbsp; 163 Audits · 19 Tutors</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">📊 Overview</div>
+    <div class="tab" onclick="switchTab('tutors')">👨‍🏫 Tutor Rankings</div>
+    <div class="tab" onclick="switchTab('detail')">🔍 Tutor Deep Dive</div>
+    <div class="tab" onclick="switchTab('alarms')">🚨 Alerts & Flags</div>
+    <div class="tab" onclick="switchTab('heatmap')">🔥 Compliance Matrix</div>
+  </div>
+
+  <!-- ===== OVERVIEW TAB ===== -->
+  <div class="tab-panel active" id="tab-overview">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card blue">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-label">Total Audits</div>
+        <div class="kpi-value blue">163</div>
+        <div class="kpi-sub">Across 19 tutors</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-label">Top Performer</div>
+        <div class="kpi-value green" style="font-size:22px; margin-top:4px;">Tefencia B.</div>
+        <div class="kpi-sub">100% compliance · Avg 8.5/10</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-label">Needs Attention</div>
+        <div class="kpi-value red" style="font-size:22px; margin-top:4px;">Priyanka</div>
+        <div class="kpi-sub">Score 2.0 · 6 active alarms</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-icon">📡</div>
+        <div class="kpi-label">Overall SOP Compliance</div>
+        <div class="kpi-value amber">49%</div>
+        <div class="kpi-sub">Critical – below threshold</div>
+      </div>
+      <div class="kpi-card violet">
+        <div class="kpi-icon">🚨</div>
+        <div class="kpi-label">Active Alarms</div>
+        <div class="kpi-value violet">31</div>
+        <div class="kpi-sub">Across 14 tutors</div>
+      </div>
+    </div>
+
+    <!-- ROW 1 -->
+    <div class="grid-65-35">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-blue)"></div>Overall Compliance by Metric</div>
+          <span class="panel-badge badge-blue">ALL TUTORS</span>
+        </div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="overallBarChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-cyan)"></div>Camera Compliance</div>
+          <span class="panel-badge badge-blue">WEBCAM</span>
+        </div>
+        <div style="display:flex; gap:20px; align-items:center; height:240px;">
+          <div class="chart-wrap" style="width:140px; flex-shrink:0">
+            <canvas id="camDonut"></canvas>
+          </div>
+          <div class="donut-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div><div class="legend-label">Tutor Cam ON</div><div class="legend-val">64%</div></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#1e40af"></div><div class="legend-label">Tutor Cam OFF</div><div class="legend-val">36%</div></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div><div class="legend-label">Student Cam ON</div><div class="legend-val">63%</div></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#164e63"></div><div class="legend-label">Student Cam OFF</div><div class="legend-val">37%</div></div>
+            <div style="margin-top:12px; padding:10px; background:rgba(239,68,68,0.08); border-radius:6px; border:1px solid rgba(239,68,68,0.2); font-size:11px; color:#fca5a5;">
+              ⚠️ 36% tutors violating webcam policy regularly
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="grid-3">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-green)"></div>Audit Score Distribution</div>
+          <span class="panel-badge badge-green">SCORED</span>
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="scoreDistChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-amber)"></div>SOP Compliance by Tutor</div>
+          <span class="panel-badge badge-amber">SOP</span>
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="sopChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-red)"></div>Alarm Frequency</div>
+          <span class="panel-badge badge-red">ALERTS</span>
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="alarmChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3 -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-violet)"></div>Tutor Audit Volume</div>
+          <span class="panel-badge badge-blue">COUNT</span>
+        </div>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="auditVolumeChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent-cyan)"></div>Professional Behaviour vs Uniform Compliance</div>
+          <span class="panel-badge badge-blue">COMPARE</span>
+        </div>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="profVsUniformChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== TUTOR RANKINGS TAB ===== -->
+  <div class="tab-panel" id="tab-tutors">
+    <div class="section-label">Performance Leaderboard</div>
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <div class="panel-title">🏆 Tutor Ranking — Composite Performance Score</div>
+        <span class="panel-badge badge-blue">19 TUTORS</span>
+      </div>
+      <table class="tutor-table" id="rankingTable"></table>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title" style="color:var(--accent-green)">🥇 Best Performers</div>
+          <span class="panel-badge badge-green">TOP 3</span>
+        </div>
+        <div id="bestPerformers"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title" style="color:var(--accent-red)">⚠️ Needs Improvement</div>
+          <span class="panel-badge badge-red">BOTTOM 3</span>
+        </div>
+        <div id="worstPerformers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DEEP DIVE TAB ===== -->
+  <div class="tab-panel" id="tab-detail">
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+      <div class="panel-title">Select Tutor:</div>
+      <select class="tutor-select" id="tutorSelect" onchange="renderTutorDetail()"></select>
+    </div>
+    <div id="tutorDetailContent"></div>
+  </div>
+
+  <!-- ===== ALARMS TAB ===== -->
+  <div class="tab-panel" id="tab-alarms">
+    <div class="kpi-row" style="grid-template-columns: repeat(4,1fr);">
+      <div class="kpi-card red"><div class="kpi-icon">🚨</div><div class="kpi-label">Camera Violations</div><div class="kpi-value red">10</div><div class="kpi-sub">Most common alarm</div></div>
+      <div class="kpi-card amber"><div class="kpi-icon">⏰</div><div class="kpi-label">Late Start Incidents</div><div class="kpi-value amber">7</div><div class="kpi-sub">Tutors affected</div></div>
+      <div class="kpi-card red"><div class="kpi-icon">🔇</div><div class="kpi-label">Early End Incidents</div><div class="kpi-value red">7</div><div class="kpi-sub">Class time wasted</div></div>
+      <div class="kpi-card violet"><div class="kpi-icon">📵</div><div class="kpi-label">Policy Violations</div><div class="kpi-value violet">2</div><div class="kpi-sub">Contact sharing</div></div>
+    </div>
+
+    <div class="section-label">CRITICAL ALARMS</div>
+    <div class="panel" id="alarmsPanel"></div>
+  </div>
+
+  <!-- ===== HEATMAP TAB ===== -->
+  <div class="tab-panel" id="tab-heatmap">
+    <div class="section-label">Compliance Heatmap — Each Tutor × Each Metric</div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔥 Metric × Tutor Compliance Matrix <span style="font-weight:300; font-size:12px; color:var(--text-muted);">(% sessions compliant)</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:11px; color:var(--text-muted);">
+          <div style="display:flex; gap:4px; align-items:center;"><div style="width:12px;height:12px;background:#10b981;border-radius:2px"></div> ≥80%</div>
+          <div style="display:flex; gap:4px; align-items:center;"><div style="width:12px;height:12px;background:#f59e0b;border-radius:2px"></div> 50–79%</div>
+          <div style="display:flex; gap:4px; align-items:center;"><div style="width:12px;height:12px;background:#ef4444;border-radius:2px"></div> &lt;50%</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <div id="heatmapContainer" style="min-width:800px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ===== DATA =====
+const DATA = {
+  "Kovida Mehta": { totalAudits: 10, avgScore: 6.0, metrics: { webCamTutor: 100, webCamStudent: 88, uniform: 62, distractionFree: 75, slideShown: 100, screenShare: 88, homework: 100, profBehav: 86, sopFollowed: 50 }, alarms: ["Camera Off Issues","Late Start","Background Noise","Policy Violation (Contact Sharing)","Early Class End","Network Issues"], issues: ["Major improvements needed, Class started late and finished 5 min early.","Contact number shared for whatsapp","camera turned on after 8min, dog barking and car horn in background","students were present on time, but class started after 10 min","teacher said there is network issue"] },
+  "Gincy Uppal": { totalAudits: 21, avgScore: 5.7, metrics: { webCamTutor: 58, webCamStudent: 58, uniform: 58, distractionFree: 95, slideShown: 95, screenShare: 79, homework: 100, profBehav: 93, sopFollowed: 42 }, alarms: ["Camera Off Issues","Policy Violation (Contact Sharing)"], issues: ["Web Cam Policy should be followed","contact number shared for whatsapp","Teacher left the class in the end by saying, I'll join after 5-10 min","Old logo is used in Slide","camera is off due to network issue"] },
+  "Saurabh Hete": { totalAudits: 22, avgScore: 4.0, metrics: { webCamTutor: 67, webCamStudent: 70, uniform: 71, distractionFree: 95, slideShown: 100, screenShare: 62, homework: 89, profBehav: 100, sopFollowed: 30 }, alarms: ["Camera Off Issues","Late Start","Background Noise","Network Issues"], issues: ["Web Cam Policy should be followed, can use new slide","tutor asked student to switch the camera OFF","class actually started after 8 min","background noise in end of class","network issue, video lagged"] },
+  "Priyanka": { totalAudits: 23, avgScore: 2.0, metrics: { webCamTutor: 57, webCamStudent: 83, uniform: 52, distractionFree: 57, slideShown: 74, screenShare: 65, homework: 88, profBehav: 80, sopFollowed: 64 }, alarms: ["Camera Off Issues","Late Start","Background Noise","Early Class End","Student No-Show","Policy Violation (Contact Sharing)"], issues: ["complete class was just conversation","baby crying in background","most of the time mic was mute","tutor asked student to watch video and disappeared for 16 min","class continued from next hour","only 1 student joined, rest absent"] },
+  "Rishabh Malik": { totalAudits: 15, avgScore: null, metrics: { webCamTutor: 25, webCamStudent: 50, uniform: 17, distractionFree: 92, slideShown: 100, screenShare: 25, homework: 44, profBehav: 100, sopFollowed: 20 }, alarms: ["Camera Off Issues","Early Class End","Student No-Show","Uniform Violation"], issues: ["student didn't turned up for class, teacher waited 44 min","class ended early but video continues","camera remains off during class","test given in class with no discussion"] },
+  "Amit Rathore": { totalAudits: 21, avgScore: null, metrics: { webCamTutor: 67, webCamStudent: 33, uniform: 57, distractionFree: 95, slideShown: 100, screenShare: 76, homework: 92, profBehav: 94, sopFollowed: 60 }, alarms: ["Camera Off Issues","Late Start","Early Class End","Network Issues"], issues: ["Class started after 7 min","effective class duration less than 30 min","class wind up 13 min early","student left without informing","student joined 39 min late"] },
+  "Tefencia Barreto": { totalAudits: 15, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 86, distractionFree: 100, slideShown: 100, screenShare: 100, homework: 100, profBehav: 100, sopFollowed: 75 }, alarms: [], issues: ["some distortion in background, rest is good","good"] },
+  "Ayush Soni": { totalAudits: 16, avgScore: null, metrics: { webCamTutor: 50, webCamStudent: 17, uniform: 50, distractionFree: 71, slideShown: 79, screenShare: 54, homework: 67, profBehav: 100, sopFollowed: 40 }, alarms: ["Camera Off Issues","Late Start"], issues: ["student joined 20 min late","screen gone blank for 27 min","camera was off throughout session","class was completely blank no voice no visuals"] },
+  "Sarang Tiwari": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 100, screenShare: 100, homework: 100, profBehav: 100, sopFollowed: 100 }, alarms: [], issues: [] },
+  "Chahat Dahiya": { totalAudits: 2, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 0, screenShare: 50, homework: 100, profBehav: 100, sopFollowed: 0 }, alarms: ["Early Class End"], issues: ["class was dismissed 8 min early","screen share may not be required"] },
+  "Indrani Mishra": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 0, screenShare: 0, homework: 100, profBehav: 100, sopFollowed: 0 }, alarms: [], issues: ["no need to share screen or slides"] },
+  "Rahul B Raj": { totalAudits: 5, avgScore: null, metrics: { webCamTutor: 0, webCamStudent: 20, uniform: 0, distractionFree: 80, slideShown: 80, screenShare: 0, homework: 100, profBehav: 50, sopFollowed: 0 }, alarms: ["Camera Off Issues"], issues: ["screen was black in complete class","student joined 27 min late"] },
+  "Soujanya": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 100, screenShare: 100, homework: 100, profBehav: 100, sopFollowed: 100 }, alarms: [], issues: [] },
+  "Devesh Mishra": { totalAudits: 4, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 100, screenShare: 75, homework: 100, profBehav: 100, sopFollowed: 100 }, alarms: ["Network Issues"], issues: ["might be network issue, video lagging"] },
+  "Abhishek": { totalAudits: 3, avgScore: null, metrics: { webCamTutor: 67, webCamStudent: 33, uniform: 67, distractionFree: 67, slideShown: 67, screenShare: 67, homework: 50, profBehav: 0, sopFollowed: 0 }, alarms: [], issues: ["no audio video"] },
+  "Avani Poddar": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 0, webCamStudent: 100, uniform: 0, distractionFree: 100, slideShown: 100, screenShare: 0, homework: 0, profBehav: 0, sopFollowed: 0 }, alarms: [], issues: [] },
+  "Samriddhi": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 0, uniform: 100, distractionFree: 100, slideShown: 100, screenShare: 100, homework: 0, profBehav: 100, sopFollowed: 0 }, alarms: [], issues: [] },
+  "Akansha Verma": { totalAudits: 1, avgScore: null, metrics: { webCamTutor: 100, webCamStudent: 100, uniform: 100, distractionFree: 100, slideShown: 100, screenShare: 100, homework: 100, profBehav: 100, sopFollowed: 0 }, alarms: [], issues: [] }
+};
+
+const METRIC_LABELS = {
+  webCamTutor: 'Tutor Webcam', webCamStudent: 'Student Webcam', uniform: 'Uniform',
+  distractionFree: 'Distraction Free', slideShown: 'Slides Shown', screenShare: 'Screen Share',
+  homework: 'Homework', profBehav: 'Prof. Behaviour', sopFollowed: 'SOP Followed'
+};
+
+const OVERALL = { webCamTutor: 64, webCamStudent: 63, uniform: 59, distractionFree: 85, slideShown: 91, screenShare: 67, homework: 88, profBehav: 92, sopFollowed: 49 };
+
+const TUTORS = Object.keys(DATA);
+
+// Composite score (weight average of metrics + bonus for scored sessions)
+function compositeScore(name) {
+  const d = DATA[name];
+  const vals = Object.values(d.metrics);
+  const metricAvg = vals.reduce((a,b) => a+b, 0) / vals.length;
+  const scoreBonus = d.avgScore ? (d.avgScore / 10) * 100 : metricAvg;
+  const alarmPenalty = d.alarms.length * 3;
+  return Math.max(0, Math.round((metricAvg * 0.6 + scoreBonus * 0.4) - alarmPenalty));
+}
+
+function heatColor(v) {
+  if (v >= 80) return { bg: 'rgba(16,185,129,0.15)', fg: '#10b981' };
+  if (v >= 50) return { bg: 'rgba(245,158,11,0.15)', fg: '#f59e0b' };
+  return { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444' };
+}
+
+function scoreClass(v) {
+  if (v >= 75) return 'score-high';
+  if (v >= 50) return 'score-mid';
+  return 'score-low';
+}
+
+// ===== CHART.JS DEFAULTS =====
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1e293b';
+Chart.defaults.font.family = 'DM Sans';
+
+function makeGradient(ctx, color1, color2) {
+  const g = ctx.createLinearGradient(0,0,0,300);
+  g.addColorStop(0, color1);
+  g.addColorStop(1, color2);
+  return g;
+}
+
+// ===== OVERVIEW CHARTS =====
+function initOverviewCharts() {
+  // Overall Bar Chart
+  const barCtx = document.getElementById('overallBarChart').getContext('2d');
+  const barGrad = barCtx.createLinearGradient(0,0,0,260);
+  barGrad.addColorStop(0,'rgba(59,130,246,0.8)');
+  barGrad.addColorStop(1,'rgba(59,130,246,0.2)');
+
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: Object.values(METRIC_LABELS),
+      datasets: [{
+        data: Object.values(OVERALL),
+        backgroundColor: Object.values(OVERALL).map(v => v>=80 ? 'rgba(16,185,129,0.7)' : v>=50 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)'),
+        borderRadius: 5, borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw}% compliance` } } },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(30,41,59,0.6)' }, ticks: { callback: v => v+'%', font: { size: 10 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 30 } }
+      }
+    }
+  });
+
+  // Camera Donut
+  const camCtx = document.getElementById('camDonut').getContext('2d');
+  new Chart(camCtx, {
+    type: 'doughnut',
+    data: {
+      datasets: [
+        { data: [64, 36], backgroundColor: ['#3b82f6','#1e3a5f'], borderWidth: 0, cutout: '60%' },
+        { data: [63, 37], backgroundColor: ['#06b6d4','#164e63'], borderWidth: 0, cutout: '75%' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+  });
+
+  // Score distribution
+  const scoreCtx = document.getElementById('scoreDistChart').getContext('2d');
+  new Chart(scoreCtx, {
+    type: 'bar',
+    data: {
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8'],
+      datasets: [{
+        label: 'Sessions',
+        data: [1, 0, 2, 2, 0, 1, 0, 2],
+        backgroundColor: ['#ef4444','#ef4444','#f59e0b','#f59e0b','#f59e0b','#f59e0b','#10b981','#10b981'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { font:{size:10} }, grid:{color:'rgba(30,41,59,0.6)'} }, x: { grid:{display:false}, ticks:{font:{size:10}} } }
+    }
+  });
+
+  // SOP Chart (top tutors by name)
+  const sopNames = ['Tefencia B.','Devesh M.','Sarang T.','Soujanya','Priyanka','Amit R.','Gincy U.','Saurabh H.','Rishabh M.'];
+  const sopVals = [75,100,100,100,64,60,42,30,20];
+  const sopCtx = document.getElementById('sopChart').getContext('2d');
+  new Chart(sopCtx, {
+    type: 'bar',
+    data: {
+      labels: sopNames,
+      datasets: [{
+        data: sopVals,
+        backgroundColor: sopVals.map(v => v>=80?'rgba(16,185,129,0.7)':v>=50?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw}%`}} },
+      scales: { x: { min:0, max:100, grid:{color:'rgba(30,41,59,0.5)'}, ticks:{callback:v=>v+'%',font:{size:9}} }, y: { grid:{display:false}, ticks:{font:{size:9}} } }
+    }
+  });
+
+  // Alarm frequency
+  const alarmLabels = ['Camera Off','Late Start','Early End','Background Noise','Student No-Show','Network Issues','Policy Violation','Uniform'];
+  const alarmCounts = [10, 7, 7, 4, 3, 4, 2, 1];
+  const alCtx = document.getElementById('alarmChart').getContext('2d');
+  new Chart(alCtx, {
+    type: 'doughnut',
+    data: {
+      labels: alarmLabels,
+      datasets: [{
+        data: alarmCounts,
+        backgroundColor: ['#ef4444','#f59e0b','#f97316','#ec4899','#8b5cf6','#06b6d4','#dc2626','#fbbf24'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'right', labels:{font:{size:9}, padding:6, boxWidth:10} } }
+    }
+  });
+
+  // Audit volume
+  const sortedByVol = TUTORS.filter(t=>DATA[t].totalAudits>=3).sort((a,b)=>DATA[b].totalAudits-DATA[a].totalAudits);
+  const volCtx = document.getElementById('auditVolumeChart').getContext('2d');
+  new Chart(volCtx, {
+    type: 'bar',
+    data: {
+      labels: sortedByVol.map(t => t.split(' ')[0]),
+      datasets: [{
+        data: sortedByVol.map(t => DATA[t].totalAudits),
+        backgroundColor: 'rgba(139,92,246,0.6)',
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false} },
+      scales: { y:{grid:{color:'rgba(30,41,59,0.5)'},ticks:{font:{size:10}}}, x:{grid:{display:false},ticks:{font:{size:10}}} }
+    }
+  });
+
+  // Prof vs Uniform
+  const pvuCtx = document.getElementById('profVsUniformChart').getContext('2d');
+  const pvuTutors = TUTORS.filter(t=>DATA[t].totalAudits>=3);
+  new Chart(pvuCtx, {
+    type: 'bar',
+    data: {
+      labels: pvuTutors.map(t => t.split(' ')[0]),
+      datasets: [
+        { label: 'Prof. Behaviour', data: pvuTutors.map(t=>DATA[t].metrics.profBehav), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 3 },
+        { label: 'Uniform', data: pvuTutors.map(t=>DATA[t].metrics.uniform), backgroundColor: 'rgba(245,158,11,0.5)', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{labels:{font:{size:10},boxWidth:12}} },
+      scales: {
+        y:{min:0,max:100,grid:{color:'rgba(30,41,59,0.5)'},ticks:{callback:v=>v+'%',font:{size:10}}},
+        x:{grid:{display:false},ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ===== RANKING TABLE =====
+function buildRankingTable() {
+  const sorted = [...TUTORS].sort((a,b) => compositeScore(b) - compositeScore(a));
+  let html = `<thead><tr>
+    <th>RANK</th><th>TUTOR</th><th>AUDITS</th><th>AVG SCORE</th>
+    <th>OVERALL COMPLIANCE</th><th>SOP %</th><th>ALARMS</th><th>COMPOSITE</th>
+  </tr></thead><tbody>`;
+
+  sorted.forEach((name, i) => {
+    const d = DATA[name];
+    const cs = compositeScore(name);
+    const complianceAvg = Math.round(Object.values(d.metrics).reduce((a,b)=>a+b,0)/9);
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const rankIcon = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const scoreDisp = d.avgScore ? d.avgScore.toFixed(1) : '—';
+    const scoreClsStr = d.avgScore ? (d.avgScore>=7?'score-high':d.avgScore>=5?'score-mid':'score-low') : 'score-na';
+    const alarmColor = d.alarms.length===0?'var(--accent-green)':d.alarms.length<=2?'var(--accent-amber)':'var(--accent-red)';
+    const csClass = cs>=70?'score-high':cs>=50?'score-mid':'score-low';
+    const hc = heatColor(d.metrics.sopFollowed);
+
+    html += `<tr>
+      <td><span class="tutor-rank ${rankClass}">${rankIcon || '#'+(i+1)}</span></td>
+      <td><div class="tutor-name-cell">${name}</div><div class="tutor-name-sub">${d.totalAudits} sessions audited</div></td>
+      <td style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${d.totalAudits}</td>
+      <td><span class="score-pill ${scoreClsStr}">${scoreDisp}</span></td>
+      <td>
+        <div class="compliance-bar">
+          <div class="bar-track"><div class="bar-fill" style="width:${complianceAvg}%;background:${complianceAvg>=80?'var(--accent-green)':complianceAvg>=50?'var(--accent-amber)':'var(--accent-red)'}"></div></div>
+          <div class="bar-pct">${complianceAvg}%</div>
+        </div>
+      </td>
+      <td><span style="font-family:'Rajdhani';font-size:16px;font-weight:700;color:${hc.fg}">${d.metrics.sopFollowed}%</span></td>
+      <td><span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:${alarmColor}">${d.alarms.length}</span></td>
+      <td><span class="score-pill ${csClass}" style="width:52px">${cs}</span></td>
+    </tr>`;
+  });
+
+  html += '</tbody>';
+  document.getElementById('rankingTable').innerHTML = html;
+
+  // Best/Worst
+  renderBestWorst(sorted);
+}
+
+function performerCard(name, rank) {
+  const d = DATA[name];
+  const cs = compositeScore(name);
+  const isGood = rank === 'best';
+  const borderColor = isGood ? 'var(--accent-green)' : 'var(--accent-red)';
+  return `
+    <div style="background:var(--bg-card2);border:1px solid ${borderColor};border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid ${borderColor}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${name}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${d.totalAudits} audits · Composite: <strong style="color:${isGood?'var(--accent-green)':'var(--accent-red)'}">${cs}</strong></div>
+        </div>
+        ${d.avgScore ? `<span class="score-pill ${d.avgScore>=7?'score-high':'score-mid'}">${d.avgScore.toFixed(1)}</span>` : ''}
+      </div>
+      ${isGood 
+        ? `<div style="font-size:11px;color:var(--accent-green)">✓ ${d.alarms.length === 0 ? 'Zero alarms' : 'Minimal issues'} · High overall compliance</div>`
+        : `<div style="display:flex;flex-wrap:wrap;gap:4px;">${d.alarms.slice(0,4).map(a=>`<span class="alarm-tag">⚠ ${a}</span>`).join('')}</div>`
+      }
+    </div>`;
+}
+
+function renderBestWorst(sorted) {
+  const best = sorted.slice(0,3);
+  const worst = sorted.slice(-3).reverse();
+  document.getElementById('bestPerformers').innerHTML = best.map(n=>performerCard(n,'best')).join('');
+  document.getElementById('worstPerformers').innerHTML = worst.map(n=>performerCard(n,'worst')).join('');
+}
+
+// ===== TUTOR DETAIL =====
+function initTutorSelect() {
+  const sel = document.getElementById('tutorSelect');
+  TUTORS.forEach(t => { sel.innerHTML += `<option value="${t}">${t}</option>`; });
+  renderTutorDetail();
+}
+
+function renderTutorDetail() {
+  const name = document.getElementById('tutorSelect').value;
+  const d = DATA[name];
+  const cs = compositeScore(name);
+
+  const metricsHtml = Object.entries(d.metrics).map(([k,v]) => {
+    const hc = heatColor(v);
+    return `
+      <div class="metric-mini">
+        <div class="metric-mini-label">${METRIC_LABELS[k]}</div>
+        <div class="metric-mini-val" style="color:${hc.fg}">${v}%</div>
+        <div class="metric-mini-bar"><div class="metric-mini-fill" style="width:${v}%;background:${hc.fg}"></div></div>
+      </div>`;
+  }).join('');
+
+  const issuesHtml = d.issues.length > 0
+    ? d.issues.map(iss => {
+        const lvl = iss.toLowerCase().includes('major')||iss.toLowerCase().includes('off throughout')||iss.toLowerCase().includes('just conversation') ? 'critical'
+          : iss.toLowerCase().includes('minor')||iss.toLowerCase().includes('late')||iss.toLowerCase().includes('early') ? 'warning' : 'ok';
+        return `<li class="issue-item ${lvl}">💬 ${iss}</li>`;
+      }).join('')
+    : '<li class="issue-item ok">✅ No significant issues recorded</li>';
+
+  const alarmsHtml = d.alarms.length > 0
+    ? d.alarms.map(a => `<span class="alarm-tag">🚨 ${a}</span>`).join('')
+    : '<span style="color:var(--accent-green);font-size:12px;">✅ No active alarms</span>';
+
+  const csClass = cs>=70?'score-high':cs>=50?'score-mid':'score-low';
+
+  document.getElementById('tutorDetailContent').innerHTML = `
+    <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="panel" style="flex:1;min-width:200px;">
+        <div class="kpi-label">COMPOSITE SCORE</div>
+        <div class="kpi-value ${cs>=70?'green':cs>=50?'amber':'red'}" style="font-size:48px">${cs}</div>
+        <div class="kpi-sub">${d.totalAudits} sessions · ${d.avgScore ? 'Avg Score: '+d.avgScore.toFixed(1)+'/10' : 'No numeric score'}</div>
+      </div>
+      <div class="panel" style="flex:1;min-width:200px;">
+        <div class="kpi-label">ACTIVE ALARMS</div>
+        <div class="kpi-value ${d.alarms.length===0?'green':d.alarms.length<=2?'amber':'red'}" style="font-size:48px">${d.alarms.length}</div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;">${alarmsHtml}</div>
+      </div>
+      <div class="panel" style="flex:2;min-width:300px;">
+        <div class="panel-header"><div class="panel-title">Radar — Metric Profile</div></div>
+        <div style="height:200px;"><canvas id="radarChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-label">PERFORMANCE METRICS</div>
+    <div class="metric-row-grid" style="margin-bottom:16px;">${metricsHtml}</div>
+
+    <div class="section-label">AUDIT COMMENTS & FLAGS</div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">📋 Comments from Audits</div></div>
+      <ul class="issue-list">${issuesHtml}</ul>
+    </div>
+  `;
+
+  // Radar
+  const rCtx = document.getElementById('radarChart').getContext('2d');
+  new Chart(rCtx, {
+    type: 'radar',
+    data: {
+      labels: Object.values(METRIC_LABELS).map(l=>l.split(' ')[0]),
+      datasets: [{
+        label: name,
+        data: Object.values(d.metrics),
+        backgroundColor: 'rgba(59,130,246,0.15)',
+        borderColor: '#3b82f6',
+        pointBackgroundColor: '#3b82f6',
+        borderWidth: 2, pointRadius: 3
+      },{
+        label: 'Overall Avg',
+        data: Object.values(OVERALL),
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        borderColor: 'rgba(245,158,11,0.4)',
+        borderWidth: 1, pointRadius: 2, borderDash: [4,4]
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: { r: { min:0, max:100, ticks:{display:false,stepSize:25}, grid:{color:'rgba(30,41,59,0.8)'}, angleLines:{color:'rgba(30,41,59,0.8)'}, pointLabels:{font:{size:9}} } },
+      plugins: { legend:{labels:{font:{size:10},boxWidth:10}} }
+    }
+  });
+}
+
+// ===== ALARMS PANEL =====
+function buildAlarmsPanel() {
+  const alarmsData = [
+    { tutor:'Priyanka', type:'critical', icon:'🚨', title:'CRITICAL — Class was purely conversation, no teaching observed', desc:'On 23-Feb, the complete class session was just conversation. Additionally, tutor instructed student to call back on WhatsApp — direct policy violation.', alarms:['Camera Off Issues','Policy Violation','Early Class End','Background Noise'] },
+    { tutor:'Priyanka', type:'critical', icon:'🚨', title:'CRITICAL — Tutor disappeared mid-class for 16 minutes', desc:'Tutor asked student to watch a video, then went offline for 16 min (19-35 min mark). Class ended at 48 min and tutor disappeared again.', alarms:['Unprofessional Conduct','Early End'] },
+    { tutor:'Rishabh Malik', type:'critical', icon:'🚨', title:'CRITICAL — Webcam OFF in 75% sessions, uniform violated in 83%', desc:'Tutor camera is consistently off. Uniform compliance at only 17%. SOP followed in only 20% of audited sessions. Requires immediate intervention.', alarms:['Camera Off Issues','Uniform Violation','SOP Breach'] },
+    { tutor:'Saurabh Hete', type:'critical', icon:'⚠️', title:'CRITICAL — Tutor instructed student to turn OFF their camera', desc:'On 5-Mar, tutor explicitly asked student to switch their camera off — directly against webcam policy. Class also started 8 minutes late.', alarms:['Policy Violation','Late Start'] },
+    { tutor:'Kovida Mehta', type:'warning', icon:'⚠️', title:'WARNING — Contact number shared for WhatsApp communication', desc:'Tutor shared personal contact number with student for WhatsApp — strict policy violation regarding out-of-platform communication.', alarms:['Policy Violation (Contact Sharing)'] },
+    { tutor:'Gincy Uppal', type:'warning', icon:'⚠️', title:'WARNING — Contact number shared + Old branding on slides', desc:'Contact number shared via WhatsApp in Feb session. Old company logo used on slides in Mar. Teacher left class saying "I\'ll join after 5-10 min".', alarms:['Policy Violation','Branding Issue'] },
+    { tutor:'Ayush Soni', type:'warning', icon:'⚠️', title:'WARNING — Class completely blank (no audio/video) detected', desc:'One session was completely blank with no voice and no visuals for entire duration. Screen also went blank for 27 minutes in another session.', alarms:['Camera Off Issues','Technical Failure'] },
+    { tutor:'Amit Rathore', type:'warning', icon:'⚠️', title:'WARNING — Effective class duration less than 30 minutes', desc:'On 2-Mar, effective teaching duration was less than 30 minutes. Multiple sessions ended 10-13 min early. Student waited 14 minutes for class to start.', alarms:['Early Class End','Late Start'] },
+    { tutor:'Rahul B Raj', type:'warning', icon:'⚠️', title:'WARNING — Screen black for entire class duration', desc:'Complete screen was black throughout the session — no content visible. Zero webcam compliance, zero screen share compliance recorded.', alarms:['Technical Failure','Camera Off'] },
+    { tutor:'Tefencia Barreto', type:'info', icon:'ℹ️', title:'INFO — Minor background distortion noted', desc:'Slight background distortion detected in one session. All other metrics excellent. No action required beyond monitoring.', alarms:[] },
+  ];
+
+  let html = '';
+  alarmsData.forEach(a => {
+    const alarmTags = a.alarms.map(t=>`<span class="alarm-tag">⚠ ${t}</span>`).join('');
+    html += `
+      <div class="alarm-item alarm-${a.type}">
+        <div class="alarm-icon">${a.icon}</div>
+        <div class="alarm-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="alarm-tutor">${a.tutor}</div>
+            <span class="panel-badge ${a.type==='critical'?'badge-red':a.type==='warning'?'badge-amber':'badge-blue'}">${a.type.toUpperCase()}</span>
+          </div>
+          <div style="font-weight:600;font-size:12px;color:var(--text-primary);margin-top:4px;">${a.title}</div>
+          <div class="alarm-desc">${a.desc}</div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">${alarmTags}</div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('alarmsPanel').innerHTML = html;
+}
+
+// ===== HEATMAP =====
+function buildHeatmap() {
+  const metrics = Object.keys(METRIC_LABELS);
+  const tutorList = TUTORS.filter(t => DATA[t].totalAudits >= 2);
+
+  let html = `<div class="heatmap-header-row">`;
+  tutorList.forEach(t => {
+    html += `<div class="heatmap-header-cell">${t.split(' ')[0]}</div>`;
+  });
+  html += '</div><div class="heatmap-grid">';
+
+  metrics.forEach(m => {
+    html += `<div class="heatmap-row"><div class="heatmap-label">${METRIC_LABELS[m]}</div><div class="heatmap-cells">`;
+    tutorList.forEach(t => {
+      const v = DATA[t].metrics[m];
+      const hc = heatColor(v);
+      html += `<div class="heatmap-cell" style="background:${hc.bg};color:${hc.fg}" title="${t}: ${v}%">${v}</div>`;
+    });
+    html += '</div></div>';
+  });
+
+  html += '</div>';
+  document.getElementById('heatmapContainer').innerHTML = html;
+}
+
+// ===== TAB SWITCHING =====
+let tabsInit = { overview: false, tutors: false, detail: false, alarms: false, heatmap: false };
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const tabs = document.querySelectorAll('.tab');
+  const tabMap = { overview:0, tutors:1, detail:2, alarms:3, heatmap:4 };
+  tabs[tabMap[name]].classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+
+  if (!tabsInit[name]) {
+    tabsInit[name] = true;
+    if (name==='tutors') buildRankingTable();
+    if (name==='detail') initTutorSelect();
+    if (name==='alarms') buildAlarmsPanel();
+    if (name==='heatmap') buildHeatmap();
+  }
+}
+
+// INIT
+tabsInit.overview = true;
+setTimeout(initOverviewCharts, 100);
+</script>
+</body>
+</html>
